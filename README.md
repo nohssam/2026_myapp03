@@ -1,4 +1,4 @@
-# Spring Boot : MyProject02 와 연동  ** 
+# Spring Boot : MyProject02 와 연동
 
 # Getting Started with Create React App
 
