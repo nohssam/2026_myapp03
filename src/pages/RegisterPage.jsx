@@ -35,12 +35,12 @@ export default function RegisterPage(params) {
             // register는  Auth.jsx의 register 함수 호출
            const response = await register(formData)
            console.log("response:" , response)
-        //    const {success, message} = response.data
-        //    if(success){
-        //      navigate('/login')
-        //    }else{
-        //      setError(message || '회원가입실패')
-        //    }
+           const {success, message} = response.data
+           if(success){
+             navigate('/login')
+           }else{
+             setError(message || '회원가입실패')
+           }
 
         }catch(err){
            setError('서버 연결에 실패했습니다.') 
