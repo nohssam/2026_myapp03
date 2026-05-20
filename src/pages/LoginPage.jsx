@@ -1,34 +1,92 @@
 import { useState } from "react";
 import useAuthStore from "../store/useAuthStore";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { login } from "../api/Auth";
 
 export default function LoginPage() {
-    const [input, setInput] = useState('')
-    const {isLoggedIn, login, logout, user} = useAuthStore()
-    const navigate = useNavigate()
+   const navigate = useNavigate()
+   
+    // Zustand 에서 로그인 상태 구독
+    const isLoggedIn = useAuthStore((state)=>state.isLoggedIn) 
+    const user = useAuthStore((state)=>state.user) 
+    const zu_login = useAuthStore((state)=>state.zu_login)
+    const zu_logout = useAuthStore((state)=>state.zu_logout)
 
-    const handleLogin = () =>{
-        // 입력없이 버튼이나 Enter를 누르면
-       if(!input.trim()) return 
-       login(input)
-       // 홈으로 이동
-       navigate('/')
+    const [formData, setFormData] =useState({m_id: '', m_pw: ''})
+    const [error, setError] = useState('')
+    const [loading, setLoading] = useState(false)
+
+
+    // 만약 로그인이 된 상태 이면 화면 
+    if(isLoggedIn){
+      return(
+        <div className="page" style={{maxWidth: '400px'}}>
+          <h2 style={{marginBottom: '16px'}}>로그인 된 상태</h2>
+          <div className="card" style={{padding:'20px', marginBottom:'16px'}}>
+              <p style={{fontWeight:'bold', marginBottom:'4px'}}>
+                {user?.m_name || user?.m_id}
+              </p>
+              <p className="muted" style={{fontSize:'13px'}}>{user?.m_email || ''} </p>
+          </div>
+          <div className="row" style={{gap:'10px'}}>
+            <button className="ghost" onClick={()=>navigate('/profile')}>마이페이지</button>
+            <button className="danger" onClick={zu_logout}>로그아웃</button>
+          </div>
+        </div>
+      )
+    }
+    const handleChange = (e)=>{
+      setFormData((prev)=>({...prev, [e.target.name]:e.target.value}))
+    }
+
+    const handleSubmit = async (e)=>{
+        e.preventDefault()
+        setError('')
+        setLoading(true)
+      try {
+        // Auth.jsx login 함수 호출
+         const response = await login(formData.m_id, formData.m_pw)
+         const {success, message, data} = response.data
+         if(success){
+            const {accessToken, refreshToken, membersVO} = data
+            // 로그인 성공 시  tokens 저장
+            localStorage.setItem('tokens', JSON.stringify({
+              accessToken,
+              refreshToken,
+              // 나중에는 전체 정보가 아니라 간단한 정보만 남겨 두자 
+              user: membersVO 
+            }))
+            zu_login(membersVO)
+            navigate("/")
+         }else{
+          setError(message || '아이디 또는 비밀번호를 확인해 주세요')
+         }
+      } catch (error) {
+        setError('서버 연결에 실패 했습니다.')
+      } finally{
+        setLoading(false)    
+      }
     }
     return(
     <div className="page" style={{ maxWidth: '360px' }}>
       <h2 style={{ marginBottom: '24px' }}>로그인</h2>
-      <div className="col">
-        <input
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          // 즉시 호출 : 랜더링 시점에서 바로 실행됨  
-          // 화살표 함수 안에서는 호출
-          onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
-          placeholder="이름을 입력하세요"
-        />
-        {/* 함수 참조 : 이벤트 발생 시 실행됨 */}
-        <button onClick={handleLogin}>로그인</button>
-      </div>
+      <form onSubmit={handleSubmit} className="col">
+         <div className="muted" style={{gap:'6px'}}>
+            <label className="muted" style={{fontSize:'13px'}}>아이디</label>
+            <input name="m_id" value={formData.m_id} onChange={handleChange} placeholder="아이디 입력" required />
+          </div> 
+
+          <div className="muted" style={{gap:'6px'}}>
+            <label className="muted" style={{fontSize:'13px'}}>비밀번호</label>
+            <input name="m_pw" value={formData.m_pw} onChange={handleChange} placeholder="비밀번호 입력" required />
+          </div> 
+          {error && <p className="error-text">{error}</p>}
+          <button type="submit" disabled={loading} style={{marginTop:'8px'}}>
+            {loading ? '로그인 중...' : '로그인'}
+          </button>
+          <p className="muted" style={{textAlign:'center', fontSize:'13px', marginTop:'4px'}}>
+            계정이 없으신가요? <Link to="/register">회원가입</Link></p>
+        </form> 
     </div>
     );
 }

@@ -17,7 +17,7 @@ export default function HomePage() {
     return(
         <div className="page" style={{maxWidth:'400px'}}>
            <h1 style={{fontSize:'24px', marginBottom:'8px'}}>
-                {isLoggedIn ? `환영합니다. ${user.username}`  : '안녕하세요!'}
+                {isLoggedIn ? `${user.m_name}님 환영합니다. `  : '안녕하세요!'}
            </h1>
            <p className="muted" style={{marginBottom:'32px'}}>
                 {isLoggedIn ? `Zustand 연습 중`  : '로그인 후 모든 기능을 사용할 수 있어요.'}
