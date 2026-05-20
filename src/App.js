@@ -7,9 +7,14 @@ import MemoPage from './pages/MemoPage';
 import ProfilePage from './pages/ProfilePage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
+import { useEffect } from 'react';
 
 
 function App() {
+  // 새로고침 시 로그인 상태 복원
+  useEffect(()=>{
+      
+  },[])
   return (
     <BrowserRouter>
     <div className='app'>
