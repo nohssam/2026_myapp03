@@ -3,6 +3,7 @@
 //         요청 인터셉터 : jwt 토큰을 헤더에 자동으로 추가 
 //         응답 인터셉터 : 토큰 만료 시 자동으로 토큰 재발급 후 재시도
 
+import useAuthStore from "../store/useAuthStore";
 import { api } from "./Http";
 
 // 토큰 저장 위치 : localStorage "tokens" 키에 JSON 으로 저장
@@ -16,6 +17,15 @@ export const login = (m_id,m_pw) =>
 
 export const logout = () => 
     api.post('/members/logout')
+
+export const myPage = () =>
+    api.get('/members/myPage')
+
+export const deleteMember = () =>
+    api.get('/members/delAccount')
+
+export const updateMember = (member) =>
+    api.post('/members/updateMember', member)
 
 
 // 요청 인터셉터 
@@ -59,9 +69,51 @@ api.interceptors.response.use(
         // 재시도 하면 무한 루프 발생 
         const excludePaths = ['/members/refresh', '/members/logut']
         const isExcluded = excludePaths.some((path)=> config.url.includes(path))
-
+        if(isExcluded) return Promise.reject(error)
+        
         // 재시도 하지 않는 경우 (나중에)
+        // config._retry 는 재시도 방지
+        if(response?.status === 401 && config._retry){
+            console.log("response : ",  response)
+            config._retry = true
 
+            try {
+                // localStorege 에서 refreshToken 꺼내기
+                const stored = localStorage.getItem("tokens")
+                const parsed = stored ? JSON.parse(stored) : {}
+
+                // POST /members/refresh 로 새 accessToken 요청
+                const res = await api.post("/members/refresh",{
+                    refreshToken: parsed.refreshToken
+                })
+                
+                const {data} = res.data
+
+                if(!data || !data.accessToken){
+                    throw new Error('AccessToken 발급 실패')
+                }
+
+                // 새 토큰 저장
+                const newTokens = {
+                    ...parsed,
+                    accessToken:  data.accessToken,
+                    refreshToken: data.refreshToken
+                }
+                localStorage.setItem('tokens', JSON.stringify(newTokens))
+
+                // zustand 로그인 상태 유지 
+                useAuthStore.getState().zu_login(parsed.user)
+
+                // 다시 새 토큰으로 재시도 
+                config.headers.Authorization = `Bearer ${parsed.accessToken}`
+                return api(config)
+
+            } catch (error) {
+                // refreshToken 도 만료 - 완전 로그아웃
+                useAuthStore.getState().zu_logout()
+                window.location.href = "/login"
+            }
+        }
 
         return Promise.reject(error)
 

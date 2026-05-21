@@ -31,6 +31,7 @@ export default function Navbar() {
             <NavLink to="/" className={cls}>홈</NavLink>
             <NavLink to="/todo" className={cls}>Todo</NavLink>
             <NavLink to="/memo" className={cls}>Memo</NavLink>
+            <NavLink to="/guestbook" className={cls}>방명록</NavLink>
             {/* 로그인이 되었을 때만 보이게 하자  */}
             {isLoggedIn && <NavLink to="/profile" className={cls}>프로필</NavLink>}
 

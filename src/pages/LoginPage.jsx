@@ -40,6 +40,11 @@ export default function LoginPage() {
     }
 
     const handleSubmit = async (e)=>{
+      // form submit 시  페이지 이동을 막는 용도로 사용
+      // 폼 제출(Submit) 방지: form 내 버튼 클릭 시 페이지가 새로고침되는 것을 막고, 
+      // JavaScript로 데이터를 검증하거나 비동기(AJAX) 처리를 할 때 필수입니다.
+      // 링크 이동(Anchor) 방지: <a> 태그 클릭 시 설정된 URL로 이동하지 않게 하여, 
+      // 싱글 페이지 애플리케이션(SPA)에서 내부 경로만 변경할 때 사용합니다.
         e.preventDefault()
         setError('')
         setLoading(true)
