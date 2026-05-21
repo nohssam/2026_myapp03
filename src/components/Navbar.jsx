@@ -6,7 +6,6 @@ export default function Navbar() {
     const navigate = useNavigate()
      // Zustand 에서 로그인 상태 구독
     const isLoggedIn = useAuthStore((state)=>state.isLoggedIn) 
-    const user = useAuthStore((state)=>state.user) 
     const zu_logout = useAuthStore((state)=>state.zu_logout) 
 
     // 로그인 여부 처리 
@@ -31,7 +30,6 @@ export default function Navbar() {
             <NavLink to="/" className={cls}>홈</NavLink>
             <NavLink to="/todo" className={cls}>Todo</NavLink>
             <NavLink to="/memo" className={cls}>Memo</NavLink>
-            <NavLink to="/guestbook" className={cls}>방명록</NavLink>
             {/* 로그인이 되었을 때만 보이게 하자  */}
             {isLoggedIn && <NavLink to="/profile" className={cls}>프로필</NavLink>}
 
