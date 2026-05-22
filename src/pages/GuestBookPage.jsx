@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 import useGuestbookStore from "../store/useGuestbookStore"
-import { guestbookInsert, guestbookList } from "../api/GuestBook"
+import { guestbookInsert, guestbookList, guestbookUpdate } from "../api/GuestBook"
 import useAuthStore from "../store/useAuthStore"
 
 export default function GuestBookPage(params) {
@@ -77,7 +77,7 @@ export default function GuestBookPage(params) {
         setEditContent(g.g_content)
     }
 
-    const handleEditSave = () =>{
+    const handleEditSave = async () =>{
         try{
             await guestbookUpdate({
                 g_idx: editId,
