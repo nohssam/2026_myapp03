@@ -6,6 +6,7 @@
 import useAuthStore from "../store/useAuthStore";
 import { api } from "./Http";
 
+
 // 토큰 저장 위치 : localStorage "tokens" 키에 JSON 으로 저장
 //               {accessToken, refreshToken, user}
 
@@ -57,6 +58,17 @@ api.interceptors.request.use(
     (error) => Promise.reject(error)
 )
 
+
+// 동시에 여러 요청이 401 받아도 refresh는 1번만 수행하기 위한 잠금 코드
+let isRefreshing = false
+let refreshSubscribers = [] // refresh 완료를 기다리는 요청들
+
+// refresh 완료 후 대기중인 요청들에게 새 토큰 전달
+const onRefreshed = (newAccessToken) => {
+    refreshSubscribers.forEach(k=>k(newAccessToken))
+    refreshSubscribers=[]
+}
+
 // 응답 인터셉터
 // 정상응답일때 그대로 반환 
 // AccessToken 만료 되면  -> accessToken 재발급 시도
@@ -64,18 +76,34 @@ api.interceptors.response.use(
     (res) => res, // 정상응답일때 그대로 반환 
 
     async(error) => {
-        const [config, response] = error
+        const {config, response} = error
+        // config 없으면 (네트워크 단절) 즉시 reject
+        if(!config) return Promise.reject(error)
+
         // refresh, logout 요청에서 난 에러는 재시도 하지 않음
         // 재시도 하면 무한 루프 발생 
-        const excludePaths = ['/members/refresh', '/members/logut']
+        const excludePaths = ['/members/refresh', '/members/logout']
         const isExcluded = excludePaths.some((path)=> config.url.includes(path))
         if(isExcluded) return Promise.reject(error)
         
         // 재시도 하지 않는 경우 (나중에)
         // config._retry 는 재시도 방지
-        if(response?.status === 401 && config._retry){
+        if(response?.status === 401 && !config._retry){
             console.log("response : ",  response)
             config._retry = true
+
+            // 이미 refresh 진행 중이면 완료될 때까지 대기 후 재시도 
+            if(isRefreshing){
+                // 성공적으로 완료됐다는 의미
+              return new Promise((resolve)=>{
+                    refreshSubscribers.push((newAccessToken) => {
+                        config.headers.Authorization = `Bearer ${newAccessToken}`
+                        resolve(api(config))
+                    })
+              })
+            }
+            
+            isRefreshing = true
 
             try {
                 // localStorege 에서 refreshToken 꺼내기
@@ -104,11 +132,17 @@ api.interceptors.response.use(
                 // zustand 로그인 상태 유지 
                 useAuthStore.getState().zu_login(parsed.user)
 
-                // 다시 새 토큰으로 재시도 
-                config.headers.Authorization = `Bearer ${parsed.accessToken}`
+                // 추가)대기중이던 요청들에게 새 토큰 전달
+                isRefreshing = false
+                onRefreshed(data.accessToken)
+
+                // 추가)현재 요청 재시도
+                config.headers.Authorization = `Bearer ${data.accessToken}`
                 return api(config)
 
             } catch (error) {
+                isRefreshing = false
+                refreshSubscribers = []
                 // refreshToken 도 만료 - 완전 로그아웃
                 useAuthStore.getState().zu_logout()
                 window.location.href = "/login"
