@@ -16,6 +16,8 @@ export default function ProfilePage() {
     const [isEditing, setIsEditing] = useState(false)
     const [saving, setSaving] = useState(false)
 
+    // useEffect 내부에서만 사용
+    // 마운트 시 딱 한번만 실행
     useEffect(()=>{
         const fetchMyPage = async () => {
             try {
