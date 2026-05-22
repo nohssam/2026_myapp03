@@ -10,6 +10,7 @@ import RegisterPage from './pages/RegisterPage';
 import { useEffect } from 'react';
 import useAuthStore from './store/useAuthStore';
 import PrivateRoute from './components/PrivateRoute';
+import GuestBookPage from './pages/GuestBookPage';
 
 
 function App() {
@@ -33,7 +34,7 @@ function App() {
         <Route path="/memo" element={<PrivateRoute> <MemoPage /></PrivateRoute>}></Route>
         <Route path="/profile" element={<PrivateRoute><ProfilePage /></PrivateRoute>}></Route>
         <Route path="/login" element={<LoginPage />}></Route>
-        
+        <Route path="/guestbook" element={<GuestBookPage />}></Route>
         <Route path="/register" element={<RegisterPage />}></Route>
       </Routes>
     </div>
