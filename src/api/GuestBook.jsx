@@ -8,3 +8,6 @@ export const guestbookInsert = (gvo) =>
 
 export const guestbookUpdate = (gvo) =>
     api.post("/guestbook/update" ,gvo)
+
+export const guestbookDelete = (g_idx, g_pwd) =>
+    api.post(`/guestbook/delete`, {g_idx, g_pwd})

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 import useGuestbookStore from "../store/useGuestbookStore"
-import { guestbookInsert, guestbookList, guestbookUpdate } from "../api/GuestBook"
+import { guestbookDelete, guestbookInsert, guestbookList, guestbookUpdate } from "../api/GuestBook"
 import useAuthStore from "../store/useAuthStore"
 
 export default function GuestBookPage(params) {
@@ -15,6 +15,7 @@ export default function GuestBookPage(params) {
     const [editSubject, setEditSubject] = useState('')
     const [editContent, setEditContent] = useState('')
     const [editPwd, setEditPwd] = useState('')
+    const [editError, setEditError] = useState('')
 
     const [subject, setSubject] = useState('')
     const [content, setContent] = useState('')
@@ -24,7 +25,10 @@ export default function GuestBookPage(params) {
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState('')
 
-   
+    // 삭제
+    const [deleteId, setDeleteId] = useState(null)
+    const [deletePwd, setDeletePwd] = useState('')
+    const [deleteError,setDeleteError] = useState('')
     
 
 
@@ -75,24 +79,59 @@ export default function GuestBookPage(params) {
         setEditId(g.g_idx)
         setEditSubject(g.g_subject)
         setEditContent(g.g_content)
+        setEditError('')
     }
 
     const handleEditSave = async () =>{
+        if(!editPwd.trim()) {
+            setEditError('비밀번호 넣어주세요')
+            return
+        }
+
         try{
-            await guestbookUpdate({
+            const res =  await guestbookUpdate({
                 g_idx: editId,
                 g_subject: editSubject,
                 g_content: editContent,
                 g_writer: user.m_name,
                 g_pwd: editPwd
             })
+            if(!res.data.success){
+                setEditError(res.data.message)
+                return
+            }
             updateGuestbook(editId, {g_subject:editSubject, g_content:editContent})
             setEditId(null)
             setEditPwd('')
+            return
         }catch(error){
-            console.log(error)
+           setEditError('수정에 실패했습니다.')
         }
     }
+
+    const handleDeleteConfirm = async (g_idx) =>{
+        if(!deletePwd.trim())  {
+           setDeleteError("비밀번호 입력하세요")
+           return
+        }
+
+        try{
+            const res = await guestbookDelete(g_idx, deletePwd)
+            if(!res.data.success){
+               setDeleteError(res.data.message)
+               setDeletePwd('')
+               return
+            }
+            removeGuestbook(g_idx)
+            setDeleteId(null)
+            setDeletePwd('')
+
+        }catch(e){
+            setDeleteError('삭제에 실패 했습니다.')
+        }
+    }
+
+    
     return (
        <div className="page" style={{maxWidth: '400px'}}>
             <h2 style={{marginBottom: '24px'}}>방명록</h2>
@@ -110,6 +149,7 @@ export default function GuestBookPage(params) {
                         value={content}
                         onChange={(e)=>setContent(e.target.value)}
                         placeholder="내용 입력"
+                        rows={4}
                         required
                      />
                      <input
@@ -156,6 +196,7 @@ export default function GuestBookPage(params) {
                                     <textarea
                                         value={editContent}
                                         onChange={(e)=>setEditContent(e.target.value)}
+                                        rows={4}
                                         required
                                     />
                                     <input
@@ -167,25 +208,41 @@ export default function GuestBookPage(params) {
                                 </div>    
                                 <div className="row" style={{marginTop:'8px'}}>
                                     <button onClick={handleEditSave}>저장</button>
-                                    <button className="ghost" onClick={() => {setEditId(null); setEditPwd('')}}>취소</button>
+                                    <button className="ghost" onClick={() => {setEditId(null); setEditPwd(''); setEditError('')}}>취소</button>
                                 </div>    
+                                <div style={{color:'red', marginTop:"8px"}}>{editError}</div>
                             </div>
                         ):(
                           <>
                             <p style={{fontWeight:'bold', marginBottom:'4px'}}>{g.g_subject}</p>
-                            <p className="muted" style={{fontSize:'12px', marginBottom:'8px'}}>{g.g_content}</p>
+                            {/* <p className="muted" style={{fontSize:'12px', marginBottom:'8px'}}><pre>{g.g_content}</pre></p> */}
+                            <textarea disabled rows={4} className="muted" style={{fontSize:'12px', marginBottom:'8px'}}>{g.g_content}</textarea>
                             <p style={{color:'#334155', fontSize:'10px', marginBottom:'8px'}}>{g.g_writer} ● {g.g_regdate} </p>
                             
                             {/* 버튼이 보이는 조건 : 로그인 상태, 입력한 사람의 이름이 같을 때  */}
                             {isLoggedIn && user?.m_name === g.g_writer &&( 
-                                <div className="row">
+                                <div className="col">
                                     <button  onClick={()=> handleEditStart(g)}>수정</button>
-                                    <button>삭제</button>
+                                    {deleteId === g.g_idx ? (
+                                        <>
+                                            <button className="danger" onClick={()=>handleDeleteConfirm(g.g_idx)}>삭제요청</button>
+                                            <input type="password"
+                                                  value={deletePwd}
+                                                  onChange={(e)=>setDeletePwd(e.target.value)}
+                                                  placeholder="비밀번호"
+                                                  style={{fontSize:'12px'}}
+                                            />
+                                            <button className="ghost" onClick={()=>{setDeleteId(null); setDeletePwd('')}}>취소</button>
+                                            
+                                            <div style={{color:'red', marginTop:"8px"}}>{deleteError}</div>
+                                        </>
+                                    ) : (
+                                        <button className="danger" onClick={()=>setDeleteId(g.g_idx)}>삭제</button>
+                                    )}
                                 </div>  
                             )} 
                           </>      
                         )} 
-
                        
                     </div>    
                   ))}
